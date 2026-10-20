@@ -269,8 +269,7 @@ fun EntranceScreen(
                             SocialMediaIconItem(
                                 title = "Spotify",
                                 onClick = {
-                                    selectedSocialInfo = "Spotify"
-                                    onNavigateToMusic()
+                                    openSpotify(context)
                                 }
                             ) {
                                 SpotifyIconView()
@@ -424,7 +423,7 @@ fun EntranceScreen(
             text = {
                 Text(
                     when (selectedSocialInfo) {
-                        "Spotify" -> "Entspanne dein Haustier mit beruhigenden Frequenzen im KI-Studio oder auf Spotify!"
+                        "Spotify" -> "Öffne Spotify für entspannende Playlists und beruhigende Klänge für dein Haustier von ALLESEASYworld."
                         "YouTube" -> "Öffne informative Trainings- & Pflegevideos direkt in der Pet Ready App."
                         else -> "Besuche die offizielle $selectedSocialInfo Community von ALLESEASYworld und Pet Ready."
                     }
@@ -437,10 +436,10 @@ fun EntranceScreen(
                     if (target == "YouTube") {
                         onNavigateToYouTube()
                     } else if (target == "Spotify") {
-                        onNavigateToMusic()
+                        openSpotify(context)
                     }
                 }) {
-                    Text(if (selectedSocialInfo == "YouTube" || selectedSocialInfo == "Spotify") "In App öffnen" else "Verstanden")
+                    Text(if (selectedSocialInfo == "YouTube") "In App öffnen" else if (selectedSocialInfo == "Spotify") "Spotify öffnen" else "Verstanden")
                 }
             },
             dismissButton = {
@@ -791,8 +790,28 @@ fun YouTubeIconView() {
 
 private fun openUrl(context: android.content.Context, url: String) {
     try {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
         context.startActivity(intent)
     } catch (_: Exception) {
+    }
+}
+
+private fun openSpotify(context: android.content.Context) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com")).apply {
+            `package` = "com.spotify.music"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(intent)
+    } catch (_: Exception) {
+        try {
+            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com")).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(webIntent)
+        } catch (_: Exception) {
+        }
     }
 }
