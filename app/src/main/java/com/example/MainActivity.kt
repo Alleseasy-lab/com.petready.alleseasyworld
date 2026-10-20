@@ -37,6 +37,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.data.AppDatabase
 import com.example.data.PetProfileRepository
 import com.example.data.ActivityRepository
+import androidx.activity.compose.BackHandler
+import com.example.ui.EntranceScreen
 import com.example.ui.ActivityScreen
 import com.example.ui.ActivityViewModel
 import com.example.ui.ActivityViewModelFactory
@@ -76,53 +78,77 @@ class MainActivity : ComponentActivity() {
                 LocalIsDarkTheme provides isDarkTheme
             ) {
                 MyApplicationTheme(darkTheme = isDarkTheme) {
+                    var hasEntered by remember { mutableStateOf(false) }
                     var selectedTab by remember { mutableStateOf(0) }
                     var addProfileForSpecies by remember { mutableStateOf<String?>(null) }
-                    
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        bottomBar = { BottomNav(selectedTab) { selectedTab = it } },
-                        containerColor = MaterialTheme.colorScheme.background
-                    ) { innerPadding ->
-                        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-                            if (selectedTab == 0) {
-                                CosmicDashboard(
-                                    onNavigate = { tabIndex -> selectedTab = tabIndex },
-                                    onCreatePet = { species ->
-                                        addProfileForSpecies = species
-                                        selectedTab = 3
-                                    }
-                                )
-                            } else if (selectedTab == 1) {
-                                ActivityScreen(viewModel = activityViewModel)
-                            } else if (selectedTab == 2) {
-                                VetFinderScreen()
-                            } else if (selectedTab == 3) {
-                                ProfileScreen(
-                                    viewModel = petProfileViewModel,
-                                    initialSpecies = addProfileForSpecies,
-                                    onDialogDismissed = { addProfileForSpecies = null }
-                                )
-                            } else if (selectedTab == 4) {
-                                AgilityAdvisorScreen()
-                            } else if (selectedTab == 5) {
-                                CareAdvisorScreen()
-                            } else if (selectedTab == 6) {
-                                VolunteerScreen()
-                            } else if (selectedTab == 7) {
-                                YouTubeScreen()
-                            } else if (selectedTab == 8) {
-                                FeedingScreen()
-                            } else if (selectedTab == 9) {
-                                DressageAdvisorScreen()
-                            } else if (selectedTab == 10) {
-                                CommunityScreen()
-                            } else if (selectedTab == 11) {
-                                MonetizationScreen()
-                            } else if (selectedTab == 12) {
-                                CreativeStudioScreen()
-                            } else {
-                                ComingSoonScreen()
+
+                    BackHandler(enabled = hasEntered) {
+                        if (selectedTab != 0) {
+                            selectedTab = 0
+                        } else {
+                            hasEntered = false
+                        }
+                    }
+
+                    if (!hasEntered) {
+                        EntranceScreen(
+                            onEnter = { hasEntered = true },
+                            onNavigateToYouTube = {
+                                hasEntered = true
+                                selectedTab = 7
+                            },
+                            onNavigateToMusic = {
+                                hasEntered = true
+                                selectedTab = 12
+                            }
+                        )
+                    } else {
+                        Scaffold(
+                            modifier = Modifier.fillMaxSize(),
+                            bottomBar = { BottomNav(selectedTab) { selectedTab = it } },
+                            containerColor = MaterialTheme.colorScheme.background
+                        ) { innerPadding ->
+                            Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                                if (selectedTab == 0) {
+                                    CosmicDashboard(
+                                        onNavigate = { tabIndex -> selectedTab = tabIndex },
+                                        onBackToEntrance = { hasEntered = false },
+                                        onCreatePet = { species ->
+                                            addProfileForSpecies = species
+                                            selectedTab = 3
+                                        }
+                                    )
+                                } else if (selectedTab == 1) {
+                                    ActivityScreen(viewModel = activityViewModel)
+                                } else if (selectedTab == 2) {
+                                    VetFinderScreen()
+                                } else if (selectedTab == 3) {
+                                    ProfileScreen(
+                                        viewModel = petProfileViewModel,
+                                        initialSpecies = addProfileForSpecies,
+                                        onDialogDismissed = { addProfileForSpecies = null }
+                                    )
+                                } else if (selectedTab == 4) {
+                                    AgilityAdvisorScreen()
+                                } else if (selectedTab == 5) {
+                                    CareAdvisorScreen()
+                                } else if (selectedTab == 6) {
+                                    VolunteerScreen()
+                                } else if (selectedTab == 7) {
+                                    YouTubeScreen()
+                                } else if (selectedTab == 8) {
+                                    FeedingScreen()
+                                } else if (selectedTab == 9) {
+                                    DressageAdvisorScreen()
+                                } else if (selectedTab == 10) {
+                                    CommunityScreen()
+                                } else if (selectedTab == 11) {
+                                    MonetizationScreen()
+                                } else if (selectedTab == 12) {
+                                    CreativeStudioScreen()
+                                } else {
+                                    ComingSoonScreen()
+                                }
                             }
                         }
                     }
@@ -181,7 +207,11 @@ data class DashboardItem(
 )
 
 @Composable
-fun CosmicDashboard(onNavigate: (Int) -> Unit, onCreatePet: (String) -> Unit) {
+fun CosmicDashboard(
+    onNavigate: (Int) -> Unit,
+    onBackToEntrance: () -> Unit = {},
+    onCreatePet: (String) -> Unit
+) {
     val primary = MaterialTheme.colorScheme.primary
     val secondary = MaterialTheme.colorScheme.secondary
     val error = MaterialTheme.colorScheme.error
@@ -224,7 +254,8 @@ fun CosmicDashboard(onNavigate: (Int) -> Unit, onCreatePet: (String) -> Unit) {
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        item { HeaderSection(onNavigate) }
+        item { HeaderSection(onNavigate = onNavigate, onBackToEntrance = onBackToEntrance) }
+        item { EntrancePortalBanner(onBackToEntrance) }
         item { AppSymbolButtonCard(onNavigate) }
         item {
             SectionTitle("Lebensformen", primary)
@@ -254,7 +285,60 @@ fun CosmicDashboard(onNavigate: (Int) -> Unit, onCreatePet: (String) -> Unit) {
 }
 
 @Composable
-fun HeaderSection(onNavigate: (Int) -> Unit) {
+fun EntrancePortalBanner(onBackToEntrance: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onBackToEntrance),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xD910142A)),
+        border = BorderStroke(1.5.dp, Brush.linearGradient(listOf(Color(0xFFFFEEA0), Color(0xFFFFB300), Color(0xFFFF5E5B))))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(Brush.radialGradient(listOf(Color(0xFFFFB300), Color(0xFF632B7F)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("🌌", fontSize = 24.sp)
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "PET READY PORTAL",
+                    color = Color(0xFFFFEEA0),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "Zum Eingang & Social Media",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "ALLESEASY Philosophie · Spotify · YouTube · Instagram",
+                    color = Color(0xFF9AA4C2),
+                    fontSize = 11.sp
+                )
+            }
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = "Zum Eingang",
+                tint = Color(0xFFFFB300)
+            )
+        }
+    }
+}
+
+@Composable
+fun HeaderSection(onNavigate: (Int) -> Unit, onBackToEntrance: () -> Unit = {}) {
     val isDark = LocalIsDarkTheme.current
     val toggleTheme = LocalThemeToggle.current
     
@@ -274,27 +358,40 @@ fun HeaderSection(onNavigate: (Int) -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "TIERWELT NEXUS",
+                "PET READY APP",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelMedium,
                 letterSpacing = 4.sp,
                 fontWeight = FontWeight.Bold
             )
             
-            IconButton(
-                onClick = { toggleTheme(!isDark) },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
-                    contentDescription = "Theme Toggle",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(
+                    onClick = onBackToEntrance,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Stars,
+                        contentDescription = "Portal Eingang",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                IconButton(
+                    onClick = { toggleTheme(!isDark) },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+                        contentDescription = "Theme Toggle",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            "Bewusstsein.\nVerbundenheit.",
+            "Anstand. Respekt.\nTierliebe.",
             color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Black,
